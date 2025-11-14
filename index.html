@@ -18,9 +18,9 @@
             <a href="#" class="nav-link" data-section="genres">ЖАНРЫ</a>
             <a href="#" class="nav-link" data-section="test">ТЕСТ</a>
             <div class="search">
-                <input type="text" placeholder="Поиск фильмов..." id="search-input">
+                <input type="text" id="search-input" placeholder="Поиск фильмов...">
                 <button class="search-btn" id="search-btn">
-                    <img src="search-icon.svg" alt="Поиск" class="search-icon">
+                    <img src="search.svg" alt="Поиск" class="search-icon">
                 </button>
             </div>
         </nav>
@@ -240,7 +240,7 @@
                 <div class="result-content">
                     <h3>ВАША ПЕРСОНАЛЬНАЯ РЕКОМЕНДАЦИЯ!</h3>
                     <div class="recommended-movie" id="recommended-movie"></div>
-                    <button class="restart-test-btn">ПРОЙТИ ТЕСТ ЗАНОВОО</button>
+                    <button class="restart-test-btn" onclick="restartTest()">ПРОЙТИ ТЕСТ ЗАНОВО</button>
                 </div>
             </div>
         </div>
@@ -267,6 +267,4 @@
     </div>
     <script src="script.js"></script>
 </body>
-
 </html>
-
