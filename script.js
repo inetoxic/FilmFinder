@@ -256,7 +256,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    /*тестик*/
     function setupTestLogic() {
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
@@ -268,6 +267,15 @@ document.addEventListener('DOMContentLoaded', function () {
         updateTestProgress();
     }
 
+    function showQuestion(num) {
+        document.querySelectorAll('.question').forEach(q => {
+            q.classList.remove('active');
+        });
+        const question = document.getElementById(`question${num}`);
+        if (question) question.classList.add('active');
+        updateNavigationButtons();
+    }
+
     function nextQuestion() {
         const current = document.getElementById(`question${currentQuestion}`);
         const selected = current.querySelector('input:checked');
@@ -275,23 +283,15 @@ document.addEventListener('DOMContentLoaded', function () {
             showError('Выберите вариант ответа!');
             return;
         }
-        current.classList.remove('active');
         currentQuestion++;
         showQuestion(currentQuestion);
         updateTestProgress();
     }
 
     function prevQuestion() {
-        document.getElementById(`question${currentQuestion}`).classList.remove('active');
         currentQuestion--;
         showQuestion(currentQuestion);
         updateTestProgress();
-    }
-
-    function showQuestion(num) {
-        const question = document.getElementById(`question${num}`);
-        if (question) question.classList.add('active');
-        updateNavigationButtons();
     }
 
     function updateNavigationButtons() {
@@ -321,9 +321,14 @@ document.addEventListener('DOMContentLoaded', function () {
         currentQuestion = 1;
         const testForm = document.getElementById('test-form');
         testForm.reset();
+
+        document.querySelectorAll('.question').forEach(q => {
+            q.classList.remove('active');
+        });
         showQuestion(1);
         updateTestProgress();
         updateNavigationButtons();
+
         const testResult = document.getElementById('test-result');
         testResult.style.display = 'none';
         testForm.style.display = 'block';
@@ -385,15 +390,21 @@ document.addEventListener('DOMContentLoaded', function () {
             <p>${recommendation.genre}</p>
             <p>⭐ ${recommendation.rating}/10</p>
             <p style="margin-top: 15px; font-style: italic;">${recommendation.description}</p>
-            <button class="add-to-favorites-btn" data-movie='${JSON.stringify(recommendation)}'>Добавить в избранное</button>
+            <button class="add-to-favorites-btn" data-movie='${JSON.stringify(recommendation)}'>В избранное</button>
         `;
 
-        recommendedMovieElement
-            .querySelector('.add-to-favorites-btn')
-            .addEventListener('click', (e) => {
-                const movieData = JSON.parse(e.target.getAttribute('data-movie'));
-                addMovieToFavorites(movieData);
-            });
+        const addBtn = recommendedMovieElement.querySelector('.add-to-favorites-btn');
+        addBtn.addEventListener('click', (e) => {
+            const button = e.currentTarget;
+            const movieData = JSON.parse(button.getAttribute('data-movie'));
+            addMovieToFavorites(movieData, button);
+        });
+
+        if (userFavorites.some(fav => fav.id === recommendation.id)) {
+            addBtn.textContent = 'В избранном';
+            addBtn.classList.add('in-favorites');
+            addBtn.disabled = true;
+        }
 
         resultElement.style.display = 'block';
     }
@@ -418,22 +429,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function addMovieToFavorites(movie) {
-        const exists = userFavorites.some((fav) => fav.id === movie.id);
+    function addMovieToFavorites(movie, button) {
+        const movieId = Number(movie.id || movie.kinopoiskId || movie.filmId);
+        if (!movieId) return;
+
+        const exists = userFavorites.some(fav => Number(fav.id) === movieId);
         if (!exists) {
             userFavorites.push({
-                id: movie.id,
-                title: movie.title,
-                genre: movie.genre,
-                rating: movie.rating,
-                poster: movie.poster,
+                id: movieId,
+                title: movie.title || movie.nameRu || movie.nameEn,
+                genre: movie.genre || (movie.genres ? movie.genres.map(g => g.genre).join(' / ') : 'Не указан'),
+                rating: movie.rating || movie.ratingKinopoisk || 'N/A',
+                poster: movie.poster || movie.posterUrl || movie.posterUrlPreview,
                 addedAt: new Date().toLocaleDateString('ru-RU')
             });
             localStorage.setItem('userFavorites', JSON.stringify(userFavorites));
-            showSuccessMessage(`Фильм "${movie.title}" добавлен в избранное!`);
+            showSuccessMessage(`Фильм "${movie.title || movie.nameRu}" добавлен!`);
             loadFavorites();
+
+            if (button) {
+                button.textContent = 'В избранном';
+                button.classList.add('in-favorites');
+                button.disabled = true;
+            }
         } else {
-            showInfo('Этот фильм уже в избранном');
+            showInfo('Уже в избранном');
         }
     }
 
@@ -476,10 +496,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function removeFromFavorites(movieId) {
-        userFavorites = userFavorites.filter((movie) => movie.id !== movieId);
-        localStorage.setItem('userFavorites', JSON.stringify(userFavorites));
-        showSuccessMessage('Фильм удален из избранного');
-        loadFavorites();
+        const id = Number(movieId);
+        const index = userFavorites.findIndex(movie => Number(movie.id) === id);
+        if (index !== -1) {
+            const removedMovie = userFavorites[index];
+            userFavorites.splice(index, 1);
+            localStorage.setItem('userFavorites', JSON.stringify(userFavorites));
+            showSuccessMessage(`Фильм "${removedMovie.title}" удалён из избранного`);
+            loadFavorites();
+        }
     }
 
     function showSection(sectionName) {
@@ -537,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 3000);
     }
 
-    /*апишка*/
     async function fetchKinopoisk(endpoint, version = 'v2.2') {
         try {
             const response = await axios.get(`https://kinopoiskapiunofficial.tech/api/${version}/${endpoint}`, {
@@ -573,7 +597,6 @@ document.addEventListener('DOMContentLoaded', function () {
         animateHomeSection();
     }
 
-    /*Жанры*/
     async function loadGenreFilms(genre) {
         const genreId = genreMap[genre].id;
         const genreName = genreMap[genre].name;
@@ -596,6 +619,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         initLazyLoading();
+
         prevPageBtn.disabled = currentGenrePage === 1;
         nextPageBtn.disabled = data.items.length < filmsPerPage;
 
@@ -603,7 +627,6 @@ document.addEventListener('DOMContentLoaded', function () {
         setActiveNav(null);
     }
 
-    /*Поиск через апи*/
     async function performSearch() {
         const query = searchInput.value.trim();
         if (!query) {
@@ -665,11 +688,20 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         `;
 
-        card.querySelector('.add-to-favorites-kp').addEventListener('click', (e) => {
+        const addBtn = card.querySelector('.add-to-favorites-kp');
+        addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const movieData = JSON.parse(e.target.getAttribute('data-movie'));
-            addMovieToFavorites(movieData);
+            const button = e.currentTarget;
+            const movieData = JSON.parse(button.getAttribute('data-movie'));
+            addMovieToFavorites(movieData, button);
         });
+
+        const movieId = useKinopoiskId ? film.kinopoiskId : film.filmId;
+        if (userFavorites.some(fav => fav.id === movieId)) {
+            addBtn.textContent = 'В избранном';
+            addBtn.classList.add('in-favorites');
+            addBtn.disabled = true;
+        }
 
         card.addEventListener('click', () => {
             showMovieDetails(card.dataset.filmId);
@@ -709,19 +741,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     genre: filmData.genres ? filmData.genres.map((g) => g.genre).join(' / ') : 'Не указан',
                     rating: filmData.ratingKinopoisk || filmData.rating || 'N/A',
                     poster: filmData.posterUrl
-                })}'>Добавить в избранное</button>
+                })}'>В избранное</button>
             </div>
         `;
 
-        initLazyLoading();
-
-        details.querySelector('.add-to-favorites-modal').addEventListener('click', (e) => {
-            const movieData = JSON.parse(e.target.getAttribute('data-movie'));
-            addMovieToFavorites(movieData);
+        const addBtn = details.querySelector('.add-to-favorites-modal');
+        addBtn.addEventListener('click', (e) => {
+            const button = e.currentTarget;
+            const movieData = JSON.parse(button.getAttribute('data-movie'));
+            addMovieToFavorites(movieData, button);
             movieModal.style.display = 'none';
             document.body.style.overflow = 'auto';
         });
 
+        if (userFavorites.some(fav => fav.id === filmId)) {
+            addBtn.textContent = 'В избранном';
+            addBtn.classList.add('in-favorites');
+            addBtn.disabled = true;
+        }
+
+        initLazyLoading();
         movieModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
@@ -741,11 +780,19 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         `;
 
-        card.querySelector('.add-to-favorites-search').addEventListener('click', (e) => {
+        const addBtn = card.querySelector('.add-to-favorites-search');
+        addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const movieData = JSON.parse(e.target.getAttribute('data-movie'));
-            addMovieToFavorites(movieData);
+            const button = e.currentTarget;
+            const movieData = JSON.parse(button.getAttribute('data-movie'));
+            addMovieToFavorites(movieData, button);
         });
+
+        if (userFavorites.some(fav => fav.id === movie.id)) {
+            addBtn.textContent = 'В избранном';
+            addBtn.classList.add('in-favorites');
+            addBtn.disabled = true;
+        }
 
         card.addEventListener('click', () => {
             showMovieDetailsFromDatabase(movie);
@@ -767,15 +814,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p><strong>Жанр:</strong> ${movie.genre}</p>
                 <p><strong>Рейтинг:</strong> ⭐ ${movie.rating}/10</p>
                 <p>${movie.description}</p>
-                <button class="add-to-favorites-modal" data-movie='${JSON.stringify(movie)}'>Добавить в избранное</button>
+                <button class="add-to-favorites-modal" data-movie='${JSON.stringify(movie)}'>В избранное</button>
             </div>
         `;
 
-        details.querySelector('.add-to-favorites-modal').addEventListener('click', () => {
-            addMovieToFavorites(movie);
+        const addBtn = details.querySelector('.add-to-favorites-modal');
+        addBtn.addEventListener('click', () => {
+            addMovieToFavorites(movie, addBtn);
             movieModal.style.display = 'none';
             document.body.style.overflow = 'auto';
         });
+
+        if (userFavorites.some(fav => fav.id === movie.id)) {
+            addBtn.textContent = 'В избранном';
+            addBtn.classList.add('in-favorites');
+            addBtn.disabled = true;
+        }
 
         movieModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
