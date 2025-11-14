@@ -515,13 +515,15 @@ body {
 }
 
 .option {
-    display: flex;
-    align-items: center;
-    padding: 20px;
+    padding: 18px 20px;
     border: 2px solid #e9ecef;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
+    background: white;
+    margin-bottom: 12px;
+    display: block;
+    position: relative;
 }
 
 .option:hover {
@@ -530,35 +532,29 @@ body {
 }
 
 .option input {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
 .option-text {
     font-size: 16px;
     color: #333;
-    margin-left: 15px;
     font-weight: 500;
-    transition: font-weight 0.3s ease;
-}
-
-.option:before {
-    content: '';
-    width: 24px;
-    height: 24px;
-    border: 2px solid #ccc;
-    border-radius: 50%;
     transition: all 0.3s ease;
-    flex-shrink: 0;
-    margin-right: 10px;
+    display: block;
+    pointer-events: none;
 }
 
 .option input:checked + .option-text {
     font-weight: 700;
+    color: #1E3A8A;
 }
 
-.option input:checked:before {
-    border-color: #10B981;
-    background: radial-gradient(circle, #10B981 50%, transparent 60%);
+.option::before,
+.option::after {
+    display: none !important;
 }
 
 .test-navigation {
