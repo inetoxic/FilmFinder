@@ -1,9 +1,0 @@
-Заменять при отправке : import pymorphy3 as pymorphy2
-Заменять: 
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', 5432)),
-    'dbname': os.getenv('DB_NAME', 'chatbot_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', 'postgres'),
-}
